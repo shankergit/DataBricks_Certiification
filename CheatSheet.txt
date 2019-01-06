@@ -1,0 +1,19 @@
+Multiple choice
+
+180 min
+40 questions
+fee - 300$
+65%
+
+ Spark Architecture - 30-40% - 16
+ Spark SQL - 25 - 35% -  12
+ Spark Basics(RDD) - 10 - 15% - 6
+ Spark Streaming - 5 - 10% - 4
+ Grapth - 5% - 2 - mostly 1
+ ML - 5%  - 2(max) - mostly 1
+ Performance tuining - 10% - 4
+ 
+ 
+ 
+
+ 
