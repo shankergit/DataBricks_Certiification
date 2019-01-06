@@ -1,0 +1,124 @@
+
+ example 2: logfile
+ 
+10:24:21 10.122.123.23 http://www.amazon.com ODC1             
+10:24:21 10.122.123.23 http://www.amazon.com/Electronics ODC1       
+10:24:21 10.122.123.23 http://www.amazon.com/Electronics/storagedevices ODC1 
+10:24:22 10.122.123.23 http://www.gmail.com ODC1 
+
+
+10:24:23 10.122.123.23 http://www.flipkart.com ODC1     
+10:24:21 10.162.123.23 http://www.flipkart.com/offers ODC1     
+10:24:24 10.122.123.23 http://www.google.com ODC1 
+
+
+10:24:25 10.192.123.23 http://www.google.com/searchString ODC1 
+10:24:21 10.123.103.23 http://www.amazon.com ODC1 
+10:24:21 10.112.123.23 http://www.amazon.com/Electronics ODC1 
+10:24:21 10.124.123.24 http://www.amazon.com/Electronics/storagedevices ODC1 
+10:24:22 10.122.123.23 http://www.gmail.com ODC2 
+10:24:23 10.122.143.21 http://www.flipkart.com ODC2 
+10:24:21 10.124.123.23 http://www.flipkart.com/offers ODC1 
+10:24:24 10.122.143.23 http://www.google.com ODC2 
+10:24:25 10.122.146.23 http://www.google.com/searchString ODC1 
+
+10:24:26 10.122.190.23 http://www.google.com/searchString ODC3
+10:24:27 10.122.190.29 http://www.xxxx.com ODC3
+              
+10:24:27 10.122.190.29 http://www.xxxx.com/search ODC3
+10:24:27 10.122.191.29 https://www.xxxx.com ODC3
+
+-----------------------------------------------------------------------------------
+ dattim  | ipadress      | url                  | website      | domain |location |
+10:24:27 | 10.122.191.29 | https://www.xxxx.com | www.xxxx.com | xxxx   |ODC3     |
+-----------------------------------------------------------------------------------
+
+Solution:
+
+val logfile = sc.textFile("/home/vagrant/Inputfiles/logfile")
+case class LogMessage(dattim:String,ipadress:String,url:String,website:String,domain:String,location:String)
+val cleansed = logfile.map(x => x.trim())
+val cleansed2 =  cleansed.filter(x => x.length!=0)
+val col_splits = cleansed2.map(x => (x.split(" ")(0),x.split(" ")(1),x.split(" ")(2),x.split(" ")(2).split("\\/")(2),x.split(" ")(2).split("\\.")(1),x.split(" ")(3)) )
+val maped = col_splits.map{ case(a,b,c,d,e,f) => LogMessage(a,b,c,d,e,f)}
+val datf = maped.toDF()
+datf.show()
+datf.show(false)
+datf.show(2,false)
+
++--------+-------------+------------------------------------------------+----------------+--------+--------+
+|dattim  |ipadress     |url                                             |website         |domain  |location|
++--------+-------------+------------------------------------------------+----------------+--------+--------+
+|10:24:21|10.122.123.23|http://www.amazon.com                           |www.amazon.com  |amazon  |ODC1    |
+|10:24:21|10.122.123.23|http://www.amazon.com/Electronics               |www.amazon.com  |amazon  |ODC1    |
+|10:24:21|10.122.123.23|http://www.amazon.com/Electronics/storagedevices|www.amazon.com  |amazon  |ODC1    |
+|10:24:22|10.122.123.23|http://www.gmail.com                            |www.gmail.com   |gmail   |ODC1    |
+|10:24:23|10.122.123.23|http://www.flipkart.com                         |www.flipkart.com|flipkart|ODC1    |
+|10:24:21|10.162.123.23|http://www.flipkart.com/offers                  |www.flipkart.com|flipkart|ODC1    |
+|10:24:24|10.122.123.23|http://www.google.com                           |www.google.com  |google  |ODC1    |
+|10:24:25|10.192.123.23|http://www.google.com/searchString              |www.google.com  |google  |ODC1    |
+|10:24:21|10.123.103.23|http://www.amazon.com                           |www.amazon.com  |amazon  |ODC1    |
+|10:24:21|10.112.123.23|http://www.amazon.com/Electronics               |www.amazon.com  |amazon  |ODC1    |
+|10:24:21|10.124.123.24|http://www.amazon.com/Electronics/storagedevices|www.amazon.com  |amazon  |ODC1    |
+|10:24:22|10.122.123.23|http://www.gmail.com                            |www.gmail.com   |gmail   |ODC2    |
+|10:24:23|10.122.143.21|http://www.flipkart.com                         |www.flipkart.com|flipkart|ODC2    |
+|10:24:21|10.124.123.23|http://www.flipkart.com/offers                  |www.flipkart.com|flipkart|ODC1    |
+|10:24:24|10.122.143.23|http://www.google.com                           |www.google.com  |google  |ODC2    |
+|10:24:25|10.122.146.23|http://www.google.com/searchString              |www.google.com  |google  |ODC1    |
+|10:24:26|10.122.190.23|http://www.google.com/searchString              |www.google.com  |google  |ODC3    |
+|10:24:27|10.122.190.29|http://www.xxxx.com                             |www.xxxx.com    |xxxx    |ODC3    |
+|10:24:27|10.122.190.29|http://www.xxxx.com/search                      |www.xxxx.com    |xxxx    |ODC3    |
+|10:24:27|10.122.191.29|https://www.xxxx.com                            |www.xxxx.com    |xxxx    |ODC3    |
++--------+-------------+------------------------------------------------+----------------+--------+--------+
+
+
+val datf1 = datf.select("ipadress","website")
+datf1.show()
+
+val datf1 = datf.filter($"domain"==="gmail")
+datf1.show()
+
+datf.createOrReplaceTempView("LogMessageTable")
+val query1 = spark.sql("select ipadress,domain,location from LogMessageTable")
+
+----------------------------------------------
+val conf = new SparkConf().master(local[*})
+val sc = new SparkContext(conf)
+
+val sparksess = new SparkSession()
+sparksess.sql("<yur sql query>")
+-------------------------------------------------
+
+
+val logfile = sc.textFile("/home/vagrant/Inputfiles/logfile")
+case class LogMessage(dattim:String,ipadress:String,url:String,website:String,domain:String,searchPage:String,location:String)
+val col_splits = logfile.map(x => (x.split(" ")(0),x.split(" ")(1),x.split(" ")(2),x.split(" ")(2).split("\\/")(2),x.split(" ")(2).split("\\.")(1),if(x.split(" ")(2).split("\\/").length>3){x.split(" ")(2).split("\\/")(3)}else{"null"},x.split(" ")(3)) )
+val maped = col_splits.map{ case (a,b,c,d,e,f,h) => LogMessage(a,b,c,d,e,f,h)}
+val datf = maped.toDF()
+datf.show()
+
+
++--------+-------------+------------------------------------------------+----------------+--------+------------+--------+
+|dattim  |ipadress     |url                                             |website         |domain  |searchPage  |location|
++--------+-------------+------------------------------------------------+----------------+--------+------------+--------+
+|10:24:21|10.122.123.23|http://www.amazon.com                           |www.amazon.com  |amazon  |null        |ODC1    |
+|10:24:21|10.122.123.23|http://www.amazon.com/Electronics               |www.amazon.com  |amazon  |Electronics |ODC1    |
+|10:24:21|10.122.123.23|http://www.amazon.com/Electronics/storagedevices|www.amazon.com  |amazon  |Electronics |ODC1    |
+|10:24:22|10.122.123.23|http://www.gmail.com                            |www.gmail.com   |gmail   |null        |ODC1    |
+|10:24:23|10.122.123.23|http://www.flipkart.com                         |www.flipkart.com|flipkart|null        |ODC1    |
+|10:24:21|10.162.123.23|http://www.flipkart.com/offers                  |www.flipkart.com|flipkart|offers      |ODC1    |
+|10:24:24|10.122.123.23|http://www.google.com                           |www.google.com  |google  |null        |ODC1    |
+|10:24:25|10.192.123.23|http://www.google.com/searchString              |www.google.com  |google  |searchString|ODC1    |
+|10:24:21|10.123.103.23|http://www.amazon.com                           |www.amazon.com  |amazon  |null        |ODC1    |
+|10:24:21|10.112.123.23|http://www.amazon.com/Electronics               |www.amazon.com  |amazon  |Electronics |ODC1    |
+|10:24:21|10.124.123.24|http://www.amazon.com/Electronics/storagedevices|www.amazon.com  |amazon  |Electronics |ODC1    |
+|10:24:22|10.122.123.23|http://www.gmail.com                            |www.gmail.com   |gmail   |null        |ODC2    |
+|10:24:23|10.122.143.21|http://www.flipkart.com                         |www.flipkart.com|flipkart|null        |ODC2    |
+|10:24:21|10.124.123.23|http://www.flipkart.com/offers                  |www.flipkart.com|flipkart|offers      |ODC1    |
+|10:24:24|10.122.143.23|http://www.google.com                           |www.google.com  |google  |null        |ODC2    |
+|10:24:25|10.122.146.23|http://www.google.com/searchString              |www.google.com  |google  |searchString|ODC1    |
+|10:24:26|10.122.190.23|http://www.google.com/searchString              |www.google.com  |google  |searchString|ODC3    |
+|10:24:27|10.122.190.29|http://www.xxxx.com                             |www.xxxx.com    |xxxx    |null        |ODC3    |
+|10:24:27|10.122.190.29|http://www.xxxx.com/search                      |www.xxxx.com    |xxxx    |search      |ODC3    |
+|10:24:27|10.122.191.29|https://www.xxxx.com                            |www.xxxx.com    |xxxx    |null        |ODC3    |
++--------+-------------+------------------------------------------------+----------------+--------+------------+--------+

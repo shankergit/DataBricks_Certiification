@@ -1,0 +1,395 @@
+
+The entry point into all functionality in Spark is the SparkSession class. 
+
+import org.apache.spark.sql.SparkSession
+
+val spark = SparkSession.builder().appName("Spark SQL basic example").config("spark.some.config.option", "some-value").getOrCreate()
+
+// For implicit conversions like converting RDDs to DataFrames
+import spark.implicits._
+
+
+Creating DataFrames:
+--------------------
+1. Structured data files.
+
+people.json
+
+{"name":"John","age":12}
+{"name":"Jack","age":45}
+{"name":"Smith","age":22}
+{"name":"James","age":25}
+{"name":"Joshi","age":null}
+
+
+
+==> Create the dataframe
+val df = spark.read.json("file:/home/shanker/spark-2.3.0-bin-hadoop2.7/examples/src/main/resources/people.json")
+val df = spark.read.json("/home/vagrant/bigdata/people.json")
+
+==> Displays the content of the DataFrame to stdout
+
+df.show()
+
+-------------------------
+DataFrame Operations (untyped Dataset Operations):
+-------------------------------------------------
+==> Print the schema in a tree format
+
+df.printSchema()
+---------------------------
+==> Select only the "name" column
+
+df.select("name").show()
+--------------------------
+==> Select everybody, but increment the age by 1
+
+df.select(df("name"), df("age") + 1).show()
+--------------------------
+
+==> Select people older than 21
+
+df.filter(df("age") > 21).show()
+
+select * feom people where age>21;
+
+----------------------------------
+==> Count people by age
+
+df.groupBy("age").count().show()
+----------------
+Running SQL Queries:
+
+df.createOrReplaceTempView("people")
+
+val sqlDF = spark.sql("SELECT * FROM people")
+sqlDF.show()
+
+
+spark.sql("show databases").show()
+
+
+----------------------------------------------------
+Global Temporary View:
+
+==> Temporary views in Spark SQL are session-scoped.
+
+==> Temporary view that is shared among all sessions and keep alive until the Spark application terminates.
+
+// Register the DataFrame as a global temporary view
+
+df.createGlobalTempView("people")
+
+// Global temporary view is tied to a system preserved database `global_temp`
+
+spark.sql("SELECT * FROM global_temp.people").show()
+
+
+// Global temporary view is cross-session
+
+spark.newSession().sql("SELECT * FROM global_temp.people").show()
+
+--------------------------------------------------------
+2. Existing RDDS 
+
+Interoperating with RDDs:
+-------------------------
+
+methods to convert existing RDDs into DataFrames.
+ 
+1.uses reflection to infer the schema of an RDD.
+
+2.Programmatic interface that allows you to construct a schema and then apply it to an existing RDD.
+
+1. Inferring the Schema Using Reflection:
+-------------------------------------
+
+==> case class defines the schema of the table. 
+
+==> The names of the arguments to the case class are read using reflection and become the names of the columns.
+
+==> Useful => when you already know the schema while writing your Spark application.
+
+-------------
+people.txt
+
+john,23
+jack,25
+smith,40
+joshi,27
+smith,30
+
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.apache.spark.sql.Encoder
+
+import spark.implicits._
+
+case class Person(name: String, age: Long)
+
+
+// Create an RDD of Person objects from a text file, convert it to a Dataframe
+
+val peopleDF = spark.sparkContext.textFile("/home/vagrant/bigdata/people.txt").map(_.split(",")).map(attributes => Person(attributes(0), attributes(1).trim.toInt)).toDF()
+
+// Register the DataFrame as a temporary view
+
+peopleDF.createOrReplaceTempView("people")
+
+// SQL statements can be run by using the sql methods
+
+val teenagersDF = spark.sql("SELECT name, age FROM people WHERE age BETWEEN 13 AND 19")
+
+teenagersDF.show()
+
+// The columns of a row in the result can be accessed by field index
+
+teenagersDF.map(teenager=>"Name:"+teenager(0)).show()
+
+// or by field name
+
+teenagersDF.map(teenager=>"Name:"+teenager.getAs[String]("name")).show()
+
+-------------------------------------------------------------------
+2. Programmatically Specifying the Schema
+
+Steps:
+
+1. Create an RDD of Rows from the original RDD.
+2. Create the schema represented by a StructType matching the structure of Rows in the RDD created in Step 1.
+3. Apply the schema to the RDD of Rows via createDataFrame method provided by SparkSession.
+
+
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.Row
+
+// Create an RDD
+
+val peopleRDD = spark.sparkContext.textFile("/home/vagrant/bigdata/people.txt")
+
+// The schema is encoded in a string
+
+val schemaString = "name age"
+
+// Generate the schema based on the string of schema
+
+val fields = schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = true))
+
+val Row= StructType(fields)
+
+// Convert records of the RDD (people) to Rows
+
+val rowRDD = peopleRDD.map(_.split(",")).map(attributes=>Row(attributes(0), attributes(1).trim))
+
+// Apply the schema to the RDD
+
+val peopleDF = spark.createDataFrame(rowRDD, schema)
+
+// Creates a temporary view using the DataFrame
+
+peopleDF.createOrReplaceTempView("people")
+
+val results = spark.sql("SELECT name FROM people")
+
+// The results of SQL queries are DataFrames and support all the normal RDD operations
+
+results.map(attributes => "Name: " + attributes(0)).show()
+--------------------------------------------------------------
+
+Creating Datasets:
+
+case class Person(name: String, age: Long)
+
+// Encoders are created for case classes
+
+val caseClassDS = Seq(Person("James", 32)).toDS()
+
+caseClassDS.show()
+
+
+val primitiveDS = Seq(1, 2, 3).toDS()
+
+primitiveDS.map(_ + 1).collect() 
+
+// DataFrames can be converted to a Dataset by providing a class. Mapping will be done by name
+
+val path = "/home/vagrant/bigdata/people.json"
+val peopleDS = spark.read.json(path).as[Person]
+peopleDS.show()
+
+----------------------------
+case class Person (name:String,age:String)
+ 
+val ds = spark.read.json("/home/vagrant/bigdata/people.json").as[Person] //explicitly converting DataFrame into Dataset => provides compile-type safety.
+
+ds.take(10).foreach(println) 
+
+ds.printSchema()
+
+ds.count()
+
+ds.show()
+--------------------------------------------
+Statistics
+
+val summary = ds.describe()
+
+summary.collect.foreach(println)
+
+val approxFreqItems = ds.stat.freqItems(Seq("age")) // returns approximate frequent items for the given columns
+
+approxFreqItems.show
+------------------------------------------
+Functional Transformations:
+
+ - The Dataset API supports functional transformations(filter,map) much like the RDD API.
+
+ - Transform one Dataset into another Dataset
+ 
+ - These operations have compile-time type safety.
+
+1. Filter:
+
+val teenagers=ds.filter($"age"<19)
+
+teenagers.show
+
+2. Map
+
+val names = ds.map(_.name)
+
+names.show
+
+3. Join
+
+import org.apache.spark.sql.types._;
+
+val name=StructField("name",DataTypes.StringType)
+val dept=StructField("dept",DataTypes.StringType)
+val age=StructField("age",DataTypes.IntegerType)
+
+val fields = Array(name,dept,age)
+val schema = StructType(fields)
+
+case class Student(name: String, dept: String, age: Integer)
+
+name,dept,age
+john,B.E,21
+jack,B.sc,20
+James,B.com,19
+
+val studentDs= spark.read.schema(schema).option("header", true).csv("/home/vagrant/bigdata/student.csv").as[Student]
+
+studentDs.show
+------------------------------
+
+val name=StructField("name",DataTypes.StringType)
+val building=StructField("building",DataTypes.StringType)
+
+val fields = Array(name,building)
+val schema = StructType(fields)
+
+case class Department(name: String, building: String)
+
+name,building
+john,1
+jack,13
+
+val departmentDs = spark.read.schema(schema).option("header", true).csv("/home/vagrant/bigdata/department.csv").as[Department]
+
+departmentDs.show
+
+--------------------------------------------------
+
+val joined = studentDs.joinWith(departmentDs, studentDs("name") === departmentDs("name"))
+
+joined.show
+-------------------------------------------------
+GroupByKey, Aggregation
+
+val deptSizes = studentDs.groupByKey(_.dept).count()
+
+----------------
+
+import org.apache.spark.sql.functions._
+
+val avgAge = studentDs.groupByKey(_.dept).agg(avg($"age").as[Double])
+
+avgAge.show
+-----------------------------------------------
+OrderBy
+
+val ordered = studentDs.orderBy("dept")
+ordered.show
+----------------------------------------------
+Parquet Files:  columnar format
+-------------------------------
+import spark.implicits._
+
+val peopleDF = spark.read.json("/home/vagrant/bigdata/people.json")
+
+// DataFrames can be saved as Parquet files, maintaining the schema information
+
+peopleDF.write.parquet("/home/vagrant/bigdata/people.parquet")
+
+
+// Parquet files are self-describing so the schema is preserved
+
+val parquetFileDF = spark.read.parquet("/home/vagrant/bigdata/people.parquet")
+
+// Parquet files can also be used to create a temporary view and then used in SQL statements
+
+parquetFileDF.createOrReplaceTempView("parquetFile")
+
+val namesDF = spark.sql("SELECT name FROM parquetFile WHERE age BETWEEN 20 AND 22")
+
+namesDF.map(attributes => "Name: " + attributes(0)).show()
+------------------------------------------
+
+Hive Table:
+-----------
+Spark SQL also supports reading and writing data stored in Apache Hive. 
+
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.SparkSession
+
+case class Record(key: Int, value: String)
+
+val spark = SparkSession.builder().appName("Spark Hive Example").config("spark.sql.warehouse.dir", warehouseLocation).enableHiveSupport().getOrCreate()
+
+import spark.implicits._
+import spark.sql
+
+sql("CREATE TABLE IF NOT EXISTS sample (key INT, value STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ")
+sql("LOAD DATA LOCAL INPATH '/home/vagrant/bigdata/sample.txt' INTO TABLE sample")
+
+// Queries are expressed in HiveQL
+
+sql("SELECT * FROM sample").show()
+
+// Aggregation
+sql("SELECT COUNT(*) FROM sample").show()
+
+// The results of SQL queries are themselves DataFrames and support all normal functions.
+
+val sqlDF = sql("SELECT key, value FROM sample WHERE key < 104 ORDER BY key")
+
+sql("show databases").show
+-------------------------------------------------------------------------------------
+
+case class Employee(emp_id: Int, date: String, time: String, unit:String)
+
+val emp = sc.parallelize(Array(
+  Employee(1001,"2015-12-12","20:50","Hadoop"),
+  Employee(1002,"2016-04-12","15:30", "Spark")
+  ))
+
+val empdf = sqlContext.createDataFrame(emp)
+empdf.registerTempTable("empdf")
+
+def makeDT(date: String, time: String) = s"$date $time"
+
+sqlContext.udf.register("makeDt", makeDT(_:String,_:String))
+
+sqlContext.sql("SELECT emp_id,unit,makeDt(date,time) from empdf").collect.foreach(println)
+
+-----------------------------------------------------------------------------------------

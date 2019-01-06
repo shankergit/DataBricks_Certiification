@@ -1,0 +1,46 @@
+
+// create a Dataframe  : Method 1
+
+val rawdata = sc.textFile("/home/vagrant/inputfiles/Employee")
+val cols = rawdata.map(x =>(x.split(",")(0),x.split(",")(1),x.split(",")(2),x.split(",")(3),x.split(",")(4)))
+val datf = cols.toDF()
+datf.show()
+
+// create a Dataframe  : Method 2
+
+val rawdata = sc.textFile("/home/vagrant/inputfiles/Employee")
+case class Employee(id:Int,name:String,Age:Int,location:String,points:Int)
+val cols = rawdata.map(x => x.split(","))
+val cols_maped = cols.map{case Array(id,name,age,location,points) => Employee(id.toInt,name,age.toInt,location,points.toInt)}
+val datf = cols_maped.toDF()
+datf.show()
+datf.show(2)
+
+datf.printSchema()
+datf.select("name").show()
+datf.select("name","age").show()
+
+datf.filter("name" === "Dharani").show() // not possible - error
+datf.filter($"name" === "Dharani").show()
+datf.filter($"name" === "Dharani" || $"Age" > 24).show()
+datf.groupBy("location").count.show()
+
+// Running SQL Queries Programmatically
+
+datf.createOrReplaceTempView("employee")
+
+val sqlDF = spark.sql("SELECT * FROM employee")
+sqlDF.show()
+ // or
+spark.sql("SELECT * FROM employee").show()
+spark.sql("SELECT id,name FROM employee").show()
+spark.newSession().sql("SELECT * FROM employee").show() // error. bcz, temp view scope is only in a session where it is created
+
+datf.createGlobalTempView("employee2")
+spark.sql("SELECT * FROM global_temp.employee2").show()
+spark.newSession().sql("SELECT * FROM global_temp.employee2").show()
+
+
+
+
+	
