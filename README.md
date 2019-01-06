@@ -31,4 +31,5 @@ Kryo serialization: Spark can also use the Kryo library (version 4) to serialize
 
 **Performance Tunining***
 apache-spark-best-practices-and-tuning.pdf(read once)
+
 https://qubole.zendesk.com/hc/en-us/articles/216920846-How-To-Spark-SQL-Tuning
