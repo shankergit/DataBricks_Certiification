@@ -4,16 +4,34 @@ Multiple choice
 40 questions
 fee - 300$
 65%
+1 retake
+
 
  Spark Architecture - 30-40% - 16
- Spark SQL - 25 - 35% -  12
+ 	Learning Spark  Lightning-Fast Big Data Analysis .pdf
+ 
  Spark Basics(RDD) - 10 - 15% - 6
- Spark Streaming - 5 - 10% - 4
- Grapth - 5% - 2 - mostly 1
- ML - 5%  - 2(max) - mostly 1
+ 	Learning Spark  Lightning-Fast Big Data Analysis .pdf
+ 	And documentation
  Performance tuining - 10% - 4
- 
- 
- 
+ 	apache-spark-best-practices-and-tuning.pdf
+Spark SQL - 25 - 35% -  12
+	and documentation
+	http://spark.apache.org/docs/latest/api/python/pyspark.sql.html#pyspark.sql.DataFrame
+	http://spark.apache.org/docs/latest/api/python/pyspark.sql.html#module-pyspark.sql.functions
+	http://spark.apache.org/docs/latest/api/python/pyspark.sql.html#pyspark.sql.Column
+ Spark Streaming - 5 - 10% - 4
+ 	Batch interval, Window Interval, Sliding 
+ Grapth - 5% - 2 - mostly 1
+ 	Example progream and undersand
+ ML - 5%  - 2(max) - mostly 1
+ 	Example progream and undersand
 
- 
+
+
+Tips
+	- Not true in theory questions
+	- Neagating the answers and choose 1
+	- Review 
+	
+	

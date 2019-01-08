@@ -1,34 +1,57 @@
 
 Which part of code is doing what?
-	- Which is base RDD
-	- Which is transformation
-	- Which line performs cache
-	- Which is action
-	- When it will be executed
+	- Which is base RDD Line 1
+	- Which is transformation Line 2
+	- Which line performs cache Line 3
+	- Which is action Line 4
+	- When it will be executed Line 4
+
+
+Line 1:rddSc=sc.textFile("/FileStore/tables/wc.txt")
+Line 2:newRDD=rddSc.flatMap(lambda x:s.split(" ")).reduceByKey(_+_)
+Line 3:newRDD.cache()
+Line 4:newRDD.saveAsTextFile("file2.txt")
+
+
+
 Which is not horizantally expandable executor
 	- Standalone
 	- Local
 	- Yarn
 	- Mesos
+
 Select 4 which are transformations
+
 Select 4 which are action
+
 One question to test RDD is immutable
 
 One question on accumulator
-	Which code solves the proble
+	Which code solves the problem
+
 Difference between coalease and repartition
 	- Wide vs Narrow
 	- Incerase or reduce
+
 Function/Methods which would cause shuffle partition
+
 How many stages would be created and which part it will create new stage
+
+
 Which are NOT a true statements for a given program
 	- Type or Compile errors
 	- Some lines no impact to the program
 	- possible value of the code	
+
+
 Persist and Cache vs checkpoint
+
 Output of the program - 5 to 6
+
 Choose the code which solve the given problem
 	- chose 1 or 2 outof 	
+
+
 Which of the code is efficient join
 	- simple file 1gb file
 	- large size 1tb file
@@ -45,6 +68,7 @@ Streaming
 What is the optimum partition
 	- no. of partition vs cores
 	- what will be the optimum partition
+
 ML - Given a code
 	Piplining
 	
